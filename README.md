@@ -257,9 +257,10 @@ This tool uses the decimal pack format scheme (`min_format`/`max_format`). Suppo
   - `painting_variant` (.json)
   - `predicate` (.json)
   - `recipe` (.json)
+  - `sulfur_cube_archetype` (.json)
   - `trim_material` (.json)
   - `trim_pattern` (.json)
-  - `walk_variant` (.json)
+  - `wolf_variant` (.json)
 
 ### Name/Path Mechanism in Commands
 

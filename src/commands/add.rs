@@ -1,9 +1,18 @@
-use crate::elements::{get_sample_content, is_valid_element_type, ELEMENT_TYPES};
+use crate::elements::{get_sample_content_for_format, is_valid_element_type, ELEMENT_TYPES};
+use crate::pack_formats;
 use anyhow::{Context, Result};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
+
+fn max_format_from_pack(root_dir: &PathBuf) -> Option<[u32; 2]> {
+    let content = fs::read_to_string(root_dir.join("pack.mcmeta")).ok()?;
+    let mcmeta: Value = serde_json::from_str(&content).ok()?;
+    let pack = mcmeta.get("pack")?;
+    pack_formats::format_from_json(pack.get("max_format")?)
+}
 
 pub fn run(command: &crate::cli::Commands) -> Result<()> {
     if let crate::cli::Commands::Add {
@@ -177,7 +186,10 @@ pub fn run(command: &crate::cli::Commands) -> Result<()> {
             }
         }
 
-        fs::write(&file_path, get_sample_content(&element_type))?;
+        fs::write(
+            &file_path,
+            get_sample_content_for_format(&element_type, max_format_from_pack(&root_dir)),
+        )?;
 
         println!(
             "\n{} Created {} '{}'",

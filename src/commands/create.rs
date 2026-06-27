@@ -1,5 +1,5 @@
 use crate::cli::Commands;
-use crate::elements::{get_sample_content, ELEMENT_TYPES};
+use crate::elements::{get_sample_content_for_format, ELEMENT_TYPES};
 use crate::pack_formats;
 use anyhow::{Context, Result};
 use console::style;
@@ -228,7 +228,7 @@ fn collect_settings(theme: &ColorfulTheme, args: CreateArgs) -> Result<PackSetti
             let max_offset = Select::with_theme(theme)
                 .with_prompt("Select the maximum Minecraft version to support")
                 .items(max_items)
-                .default(0)
+                .default(max_items.len().saturating_sub(1))
                 .interact()
                 .context("Failed to select maximum version")?;
             let max_idx = min_idx + max_offset;
@@ -483,32 +483,35 @@ fn create_pack(pack_settings: PackSettings, force: bool) -> Result<()> {
             fs::create_dir_all(&folder_path)
                 .with_context(|| format!("Failed to create {} folder", folder))?;
 
+            let sample_content =
+                get_sample_content_for_format(folder, Some(pack_settings.max_format));
+
             // create starter files based on folder type
             // idk why I made match values for some of them and I can't be bothered to fix it now
             match folder.as_str() {
                 "function" => {
                     let main_mcfunction = folder_path.join("main.mcfunction");
-                    fs::write(main_mcfunction, get_sample_content("function"))
+                    fs::write(main_mcfunction, sample_content)
                         .context("Failed to create main.mcfunction")?;
                 }
                 "advancement" => {
                     let example_advancement = folder_path.join("advancement.json");
-                    fs::write(example_advancement, get_sample_content("advancement"))
+                    fs::write(example_advancement, sample_content)
                         .context("Failed to create example advancement")?;
                 }
                 "recipe" => {
                     let example_recipe = folder_path.join("recipe.json");
-                    fs::write(example_recipe, get_sample_content("recipe"))
+                    fs::write(example_recipe, sample_content)
                         .context("Failed to create example recipe")?;
                 }
                 "loot_table" => {
                     let example_loot = folder_path.join("loot_table.json");
-                    fs::write(example_loot, get_sample_content("loot_table"))
+                    fs::write(example_loot, sample_content)
                         .context("Failed to create example loot table")?;
                 }
                 "predicate" => {
                     let example_predicate = folder_path.join("predicate.json");
-                    fs::write(example_predicate, get_sample_content("predicate"))
+                    fs::write(example_predicate, sample_content)
                         .context("Failed to create example predicate")?;
                 }
                 // handle additional element types
@@ -519,7 +522,7 @@ fn create_pack(pack_settings: PackSettings, force: bool) -> Result<()> {
                     {
                         let filename = format!("example{}", ext);
                         let file_path = folder_path.join(&filename);
-                        fs::write(file_path, get_sample_content(element_type))
+                        fs::write(file_path, sample_content)
                             .with_context(|| format!("Failed to create {}", filename))?;
                     } else {
                         // this case should not occur due to prior validation

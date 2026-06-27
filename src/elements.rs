@@ -1,3 +1,5 @@
+use crate::pack_formats;
+
 // all elements and their file extensions
 pub const ELEMENT_TYPES: &[(&str, &str)] = &[
     ("function", ".mcfunction"),
@@ -15,9 +17,10 @@ pub const ELEMENT_TYPES: &[(&str, &str)] = &[
     ("painting_variant", ".json"),
     ("predicate", ".json"),
     ("recipe", ".json"),
+    ("sulfur_cube_archetype", ".json"),
     ("trim_material", ".json"),
     ("trim_pattern", ".json"),
-    ("walk_variant", ".json"),
+    ("wolf_variant", ".json"),
 ];
 
 // check if an element type is valid
@@ -25,8 +28,20 @@ pub fn is_valid_element_type(element_type: &str) -> bool {
     ELEMENT_TYPES.iter().any(|(name, _)| *name == element_type)
 }
 
+fn uses_26_2_format(max_format: Option<[u32; 2]>) -> bool {
+    max_format
+        .map(|f| pack_formats::cmp_format(f, [107, 1]) != std::cmp::Ordering::Less)
+        .unwrap_or(true)
+}
+
 // all elements and their template files
 pub fn get_sample_content(element_type: &str) -> String {
+    get_sample_content_for_format(element_type, None)
+}
+
+pub fn get_sample_content_for_format(element_type: &str, max_format: Option<[u32; 2]>) -> String {
+    let uses_26_2 = uses_26_2_format(max_format);
+
     match element_type {
         "function" => String::new(),
         "advancement" => serde_json::to_string_pretty(&serde_json::json!({
@@ -107,10 +122,26 @@ pub fn get_sample_content(element_type: &str) -> String {
           "author": ""
         }))
         .unwrap(),
-        "predicate" => serde_json::to_string_pretty(&serde_json::json!({
-          "condition": ""
-        }))
-        .unwrap(),
+        "predicate" => {
+            if uses_26_2 {
+                serde_json::to_string_pretty(&serde_json::json!({
+                  "condition": "minecraft:entity_properties",
+                  "entity": "this",
+                  "predicate": {
+                    "minecraft:entity_type": "minecraft:pig"
+                  }
+                }))
+            } else {
+                serde_json::to_string_pretty(&serde_json::json!({
+                  "condition": "minecraft:entity_properties",
+                  "entity": "this",
+                  "predicate": {
+                    "type": "minecraft:pig"
+                  }
+                }))
+            }
+            .unwrap()
+        }
         "recipe" => serde_json::to_string_pretty(&serde_json::json!({
           "type": ""
         }))
@@ -132,11 +163,24 @@ pub fn get_sample_content(element_type: &str) -> String {
           "template_item": ""
         }))
         .unwrap(),
+        "sulfur_cube_archetype" => serde_json::to_string_pretty(&serde_json::json!({
+          "knockback_modifiers": {
+            "horizontal_power": 1.0,
+            "vertical_power": 1.0
+          }
+        }))
+        .unwrap(),
         "wolf_variant" => serde_json::to_string_pretty(&serde_json::json!({
-          "biomes": "",
-          "wild_texture": "",
-          "tame_texture": "",
-          "angry_texture": ""
+          "assets": {
+            "wild": "",
+            "tame": "",
+            "angry": ""
+          },
+          "spawn_conditions": [
+            {
+              "priority": 0
+            }
+          ]
         }))
         .unwrap(),
         _ => serde_json::to_string_pretty(&serde_json::json!({})).unwrap(),
